@@ -1,0 +1,199 @@
+npx react-native run-android
+
+
+
+
+const awsbb = require('aws-sdk');
+const ddby = new awsbb.DynamoDB();
+
+exports.handler = async (event, context) => {
+  if (!event.request.userAttributes.sub) {
+    console.log("Error: No user was written to DynamoDB baby")
+    context.done(null, event);
+    return;
+  }
+
+  // Save the user to DynamoDB
+  const datebb = new Date();
+
+  const paramsbb = {
+    Item: {
+      'id': { S: event.request.userAttributes.sub },
+      '__typename': { S: 'User' },
+      'username': { S: event.userName },
+      'email': { S: event.request.userAttributes.email },
+      'createdAt': { S: datebb.toISOString() },
+      'updatedAt': { S: datebb.toISOString() },
+    },
+    TableName: process.env.USERTABLE,
+  }
+
+  try {
+    await ddby.putItem(paramsbb).promise();
+    console.log("Success baby");
+  } catch (e) {
+    console.log("Error baby", e);
+  }
+
+  context.done(null, event);
+}
+
+************************************************
+type User @model @auth(rules: [{ allow: owner,provider:userPools, ownerField: "id" ,operations: [read,create,update] }]) {    
+  id: ID!
+  username: String!
+  email: String!
+
+  orders: [Order] @hasMany(indexName: "byUser", fields: ["id"])
+
+}
+
+
+
+type Car @model
+ @auth(rules: [{ allow: private,provider:userPools, ownerField: "id" ,operations: [read,create,update, delete] }])   
+ {
+  id: ID!
+  type: String!
+  latitude: Float,
+  longitude: Float,
+  heading: Float,
+
+
+  orders: [Order] @hasMany(indexName: "byCar", fields: ["id"])
+
+}
+
+
+
+type Order @model
+ @auth(rules: [{ allow: private,provider:userPools, ownerField: "id" ,operations: [read,create,update, delete] }])   {
+  id: ID!
+  createdAt: ID!
+
+  type: String!
+
+  originLatitude: Float!
+  oreiginLongitude: Float!
+
+  destLatitude: Float!
+  destLongitude: Float!
+
+
+  userId: ID!
+  user: User @belongsTo(name: "byUser",fields: ["userId"])
+
+  carId: ID!
+  car: Car @belongsTo(name: "byCar",fields: ["carId"])
+
+}
+
+************************************************
+mutation createcarbb{
+  // NOTE:muation means you are inserting this data
+  createCar(input:{
+    type: "Comfort",
+    latitude: 28.480627,
+    longitude: -16.253045,
+    heading: 57, 
+  }){
+    // you can get them if you write them
+    id
+		type
+    latitude
+    longitude
+  }
+}
+
+
+
+mutation addThisOrderbb{
+	createOrder(input:{
+    createdAt:"ddf",
+    type:"xl",
+    originLatitude: 1.2,
+oreiginLongitude: 31.2,
+destLatitude: 41.2,
+destLongitude: 11.2,
+    carId:"f1b890c1-8d81-4ba1-a6f0-bdcb8f496d5b"
+    userId:"c8beccf6-103c-46d8-9318-55e4ef999d58"
+  }){
+    type
+    originLatitude
+    userId
+  }
+}
+
+
+checking does this user have any car(means does he ever opened driverApp baby) 
+query MyQuery {
+  listUsers {
+    items {
+      id
+      email
+      car {
+        id
+      }
+    }
+  }
+}
+
+
+mutation UpdateOrder{
+  updateOrder(input:{
+    carId: "f418d488-f0c1-7077-a6ec-5da3bdf4d281", 
+    id: "", 
+    status: "PICKING_UP_CLIENTbb"
+  }) {
+    id
+      createdAt
+      type
+      status
+      originLatitude
+      oreiginLongitude
+      destLatitude
+      destLongitude
+      userId
+      carId
+      updatedAt
+      user {
+        username
+      }
+  }
+}
+
+mutation updateCarr {
+  updateCar(input: {id: "f418d488-f0c1-7077-a6ec-5da3bdf4d281", latitude: 28.450627,  longitude: -16.263045,heading: -1}) {
+    id
+      type
+      latitude
+      longitude
+      heading
+      isActive
+      userId
+      createdAt
+      updatedAt
+  }
+}
+
+************************************************
+hola
+hola1234
+mickyfazler@gmail.com
+58586
+
+
+micky
+micky12345
+mickyfazler@gmail.com
+58586252
+
+
+taki
+taki1234
+mickyfazler@gmail.com
+54558586
+// NOTE:copy using "/" not using "*" than exra space come on aws-mobile-signin own explore
+
+
+************************************************

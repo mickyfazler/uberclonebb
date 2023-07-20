@@ -1,0 +1,62 @@
+type User @model @auth(rules: [{ allow: owner,provider:userPools, ownerField: "id" ,operations: [read,create,update] }]) {    
+  id: ID!
+  username: String!
+  email: String!
+
+  orders: [Order] @hasMany(fields: ["id"])
+
+  car: Car @hasOne(fields: ["id"])
+
+}
+
+
+
+type Car @model
+ @auth(rules: [{ allow: private,provider:userPools, ownerField: "id" ,operations: [read,create,update, delete] }])   
+ {
+  id: ID!
+  type: String!
+  latitude: Float,
+  longitude: Float,
+  heading: Float,
+  isActive: Boolean
+
+
+  orders: [Order] @hasMany(fields: ["id"])
+
+  userId: ID!
+  user: User @belongsTo(fields: ["id"])
+
+}
+
+
+
+type Order @model
+ @auth(rules: [{ allow: private,provider:userPools, ownerField: "id" ,operations: [read,create,update, delete] }])   {
+  id: ID!
+  createdAt: String!
+
+  type: String!
+  status: String,
+
+  originLatitude: Float!
+  oreiginLongitude: Float!
+
+  destLatitude: Float!
+  destLongitude: Float!
+
+
+  userId: ID!
+  user: User @belongsTo(fields: ["userId"])
+
+  carId: ID!
+  car: Car @belongsTo(fields: ["carId"])
+
+}
+
+
+
+type Subscription {
+  onOrderUpdated(id: ID!): Order @aws_subscribe(mutations: ["updateOrder"])
+  onCarUpdated(id: ID!): Car @aws_subscribe(mutations: ["updateCar"])
+}
