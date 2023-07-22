@@ -161,9 +161,17 @@ mutation UpdateOrder{
       }
   }
 }
+28.470799, -16.265049
+28.454651, -16.257667
+28.451692, -16.254546
+28.459073, -16.257251
+
+  updateCar(input: {id: "f418d488-f0c1-7077-a6ec-5da3bdf4d281", latitude: 28.451692,   longitude: -16.254546,heading: 60}) {
+  updateCar(input: {id: "f418d488-f0c1-7077-a6ec-5da3bdf4d281", latitude: 28.459073 ,  longitude: -16.257251,heading: 120}) {
 
 mutation updateCarr {
-  updateCar(input: {id: "f418d488-f0c1-7077-a6ec-5da3bdf4d281", latitude: 28.450627,  longitude: -16.263045,heading: -1}) {
+  updateCar(input: {id: "f418d488-f0c1-7077-a6ec-5da3bdf4d281", latitude: 28.459073 ,  longitude: -16.257251,heading: 120}) {
+
     id
       type
       latitude
@@ -197,3 +205,20 @@ mickyfazler@gmail.com
 
 
 ************************************************
+
+1 **********
+style={StyleSheet.absoluteFill}         2.47 --->userApp order status map 
+
+mapRef.current.fitToCoordinates     to see the map properly         11.08
+
+useRef()  NOTE please learn
+
+2  ***************
+
+<Marker></Marker>       we can use it to show origin and destination
+
+
+userapp -->home location animate to current location
+
+white
+borderWidth:2,borderColor:'blue'

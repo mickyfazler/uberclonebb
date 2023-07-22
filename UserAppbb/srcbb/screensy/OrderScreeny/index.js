@@ -7,7 +7,7 @@ import { onOrderUpdated, onCarUpdated } from './subscriptionsy';
 import OrderMapbb from "../../componentsy/OrderMapy";
 
 const OrderScreenbb = (props) => {
-  const [car, setCar] = useState(null);
+  // const [car, setCar] = useState(null);
   const [ordery, setOrdery] = useState(null);
 
   const route = useRoute();
@@ -49,68 +49,29 @@ const OrderScreenbb = (props) => {
 
 
 
-  // Fetch Car data when order is updated
-  useEffect(() => {
-    // console.log("car ");
-    console.log('called 3');
 
-    // if we don't have any order ....NOTE order.carId = '1' we give initially when creating the order and if order accepted by driver than there will be driver's real "carId" that's why given this logic ✌️ bro
-    if (!ordery?.carId || ordery.carId === '1') {
-      return;
-    }
-
-
-
-    const fetchCary = async () => {
-      // graphqlOperation(getCar, { id: ordery.carId })
-
-      try {
-        let id=ordery.carId;
-        const carDatay = await API.graphql(
-          graphqlOperation(getCar, { id: ordery.carId })
-        );
-        // console.log(carDatay);
-        console.log("dt2 ",carDatay,ordery.carId,car);
-
-        setCar(carDatay.data.getCar);
-      } catch (e) {
-        console.warn("2 ",e)
-
-      } 
-
-
-    }
-    fetchCary();
-  }, [ordery])
-
-
-
-  // Subscribe to car updates
-  useEffect(() => {
-    console.log('called 4');
-
-    if (!ordery?.carId || ordery.carId === '1') {
-      return;
-    }
-
-    const subscription = API.graphql(
-      graphqlOperation(onCarUpdated, { id: ordery.carId })
-    ).subscribe({
-      next: ({ value }) => {console.log('car sub '); setCar(value.data.onCarUpdated)},
-      error: erro => console.warn("e2",erro)
-    })
-
-    return () => subscription.unsubscribe();
-  }, [ordery])
 
   return (
-    <View>
-      <View style={{height: Dimensions.get('window').height - 400}}>
-        <OrderMapbb car={car} />
+    <View style={{ flex: 1 }}>
+      {/* <View style={{height: Dimensions.get('window').height - 400}}> */}
+      <View >
+        <Text >Order status: </Text>
+
+        {ordery?.status != 'NEW' && (
+          <Text style={{color:'yellow',backgroundColor: 'hotpink',}}> {ordery?.status}</Text>
+        )
+        }
+        {ordery?.status == 'NEW' && (<Text> {ordery?.status}</Text>)}
       </View>
-      <View>
-        <Text>Order status: {ordery?.status}</Text>
+      <View style={{ flex: 1 }}>
+      {/* <View style={{ flex: 1 }}> */}
+       {/* NOTE:if 'car' or  'ordery' any info update through state then 'OrderMapbb' whole again and again re-render  */}
+        {/* <OrderMapbb car={car} ordery={ordery} /> */}
+        <OrderMapbb ordery={ordery} />
       </View>
+
+      
+
     </View>
   );
 };

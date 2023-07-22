@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Dimensions, Pressable } from "react-native";
-import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import React, { useState, useEffect,useRef } from "react";
+import { View, Text, Dimensions, Pressable ,PermissionsAndroid, Platform} from "react-native";
+import MapView, { PROVIDER_GOOGLE ,Marker, AnimatedRegion } from "react-native-maps";
 import MapViewDirections from 'react-native-maps-directions';
+
+// NOTE:in vscode 'react-native-vector-icons' showing error don't worry ...please 🤣
 import Entypo from "react-native-vector-icons/Entypo";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import AntDesign from "react-native-vector-icons/AntDesign";
@@ -9,6 +11,7 @@ import Fontisto from "react-native-vector-icons/Fontisto";
 import stylesbb from './styles.js'
 import NewOrderPopupbb from "../../componentsy/NewOrderPopupy";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
+import Geolocation from '@react-native-community/geolocation';
 
 const origin = {latitude: 28.450927, longitude: -16.260845};
 const destination = {latitude: 37.771707, longitude: -122.4053769};
@@ -20,10 +23,22 @@ import { updateCar, updateOrder } from '../../graphqly/mutationsy';
 
 
 
+const screen = Dimensions.get('window');
+const ASPECT_RATIO = screen.width / screen.height;
+const LATITUDE_DELTA =  0.0922;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+
+
 
 const HomeScreeny = () => {
+
+
+
+
+  const mapRefbb = useRef()
+
   const [isOnline, setIsOnline] = useState(false);
-  const [myPosition, setMyPosition] = useState(null);
+  // const [myPosition, setMyPosition] = useState(null);
   const [order, setOrder] = useState(null)        // accepted order bb
   const [car, setCar] = useState(null);
 
@@ -51,6 +66,8 @@ const [newOrders, setNewOrders] = useState([]);
     }
   }) */
  
+ 
+
   const fetchCary = async () => {
     try {
       const userDatabb = await Auth.currentAuthenticatedUser();
@@ -79,11 +96,89 @@ const [newOrders, setNewOrders] = useState([]);
     }
   }
 
+  // SECTION: location start bb
+  function animateToMyLocationbb(x) {
+    // console.log('aa',myPosition);
+    console.log('aa2',x);
+    mapRefbb.current.animateToRegion(x)
+  }
+
+  
+  const getLocationbb=()=>{
+    Geolocation.getCurrentPosition(info =>{ 
+      console.log('ll',info);
+      console.log('l2',info.coords.latitude);
+      console.log('l3',info.coords.longitude);
+
+      
+      // setMyPosition({latitude: info.coords.latitude,
+      //   longitude: info.coords.longitude,
+      //   latitudeDelta: LATITUDE_DELTA,
+      //   longitudeDelta: LONGITUDE_DELTA})
+      
+        animateToMyLocationbb({latitude: info.coords.latitude,
+          longitude: info.coords.longitude,
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA})
+      }
+    );
+    // console.log('aa1',myPosition);      // here you may not get use location because to get location takes time own explore: GENIUS: (you will get null)
+
+    // const CurrentlocationAnimatebb = setTimeout(myGreeting, 5000);
+  }
+  
+  const androidPermissionbb = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: "Uber App location Permission",
+          message:
+            "Uber App needs access to FAZLE'S location " +
+            "so you can take awesome rides.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "Fuck"
+        }
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log("You can use the location");
+
+        getLocationbb()
+      } else {
+        console.log("Location permission denied");
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  }
+
+  const AskLocationbb = () => {
+
+    if (Platform.OS === 'android') {
+      androidPermissionbb();
+    } else {
+      // IOS .....for ios this will automatically ask for location permission based on what you give 'NSLocationWhenInUseUsageDescription' or 'NSLocationAlwaysAndWhenInUseUsageDescription'(see notesy.html) baby 
+      Geolocation.requestAuthorization();
+      getLocationbb()
+    }
+  }
+
+  // SECTION: location end bb
 
   useEffect(() => {
     fetchCary();
     fetchOrdersy();
+
+    AskLocationbb()
+    
+
+    
+
   }, []);
+
+
+
   const onDecline = () => {
     setNewOrders(newOrders.slice(1));   // delete first item on the array bb
     console.warn("decilined the order");
@@ -131,37 +226,51 @@ const [newOrders, setNewOrders] = useState([]);
   }
 
   const onUserLocationChange =async (event) => {
-    console.log('onUserLocationChange called baby');
-    // console.log(event.nativeEvent.coordinate.longitude);
-    // console.log(event.nativeEvent.coordinate.latitude);
-  
+    if (order) {        // why update car position on the database where he don't have any order bb
+
+      console.log('onUserLocationChange called baby');
+      // console.log(event.nativeEvent.coordinate.longitude);
+      // console.log(event.nativeEvent.coordinate.latitude);
+    
 
 
-    const { latitude, longitude, heading } = event.nativeEvent.coordinate
-    // Update the car position bb
-    try {
-      const userDatabb = await Auth.currentAuthenticatedUser();
-      const input = {
-        id: userDatabb.attributes.sub,
-        latitude,
-        longitude,
-        heading,
+      const { latitude, longitude, heading } = event.nativeEvent.coordinate
+      // Update the car position bb
+      try {
+        const userDatabb = await Auth.currentAuthenticatedUser();
+        const input = {
+          id: userDatabb.attributes.sub,
+          latitude,
+          longitude,
+          heading,
+        }
+        console.log("5 a", input);
+        const updatedCarDatabb = await API.graphql(
+          graphqlOperation(updateCar, { input })
+        )
+        console.log("5 b", updatedCarDatabb.data.updateCar);
+
+        setCar(updatedCarDatabb.data.updateCar);
+        
+      } catch (e) {
+        console.log("5 e",e);
       }
-      console.log("5 a", input);
-      const updatedCarDatabb = await API.graphql(
-        graphqlOperation(updateCar, { input })
-      )
-      console.log("5 b", updatedCarDatabb.data.updateCar);
 
-      setCar(updatedCarDatabb.data.updateCar);
-    } catch (e) {
-      console.log("5 e",e);
-    }
+  }
 
   }
 
   const onDirectionFound = (event) => {
    
+    mapRefbb.current.fitToCoordinates(event.coordinates, {
+      edgePadding: {
+          right: 30,
+          bottom: 50,
+          left: 30,
+          top: 50,
+      },
+  });
+
     // console.log("Direction found: ", event);
     if (order) {
       setOrder({
@@ -244,19 +353,29 @@ const [newOrders, setNewOrders] = useState([]);
     return (<Text style={stylesbb.bottomText}>You're offline</Text>);
   }
 
+
+
+
   return (
     <View>
+
       <MapView
+        ref={mapRefbb}
+
         style={{width: '100%', height: Dimensions.get('window').height - 150}}
         provider={PROVIDER_GOOGLE}
         showsUserLocation={true}
         onUserLocationChange={onUserLocationChange}         // if my/driver location change when I drive then this function will learn
       
         initialRegion={{
-          latitude: 28.450627,
-          longitude: -16.263045,
-          latitudeDelta: 0.0222,
-          longitudeDelta: 0.0121,
+          // latitude: 28.450627,
+          // longitude: -16.263045,
+          latitude: 0,
+          longitude: 0,
+          // latitudeDelta: 0.0222,
+          // longitudeDelta: 0.0121,
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA,
         }}
       >
         {order && (
@@ -269,10 +388,15 @@ const [newOrders, setNewOrders] = useState([]);
             onReady={onDirectionFound}      // if it(MapViewDirections) found direction/path between origin and destination then this will be called bb
             destination={getDestination()}
             apikey={GOOGLE_MAPS_APIKEY}
-            strokeWidth={5}
+            strokeWidth={3}
             strokeColor="black"
+
           />
-        )}
+          )}
+
+        
+        {order && (<Marker coordinate={getDestination()} title={'next'} />)}
+      
       </MapView>
 
 
@@ -330,7 +454,7 @@ const [newOrders, setNewOrders] = useState([]);
 
 
       {/* if new order comes then show the popup */}
-      {newOrders.length > 0 && !order && <NewOrderPopupbb
+      { newOrders.length > 0 && !order && <NewOrderPopupbb
         newOrder={newOrders[0]}
         duration={2}
         distance={0.5}
